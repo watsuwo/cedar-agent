@@ -1,0 +1,35 @@
+services:
+  # AuthZEN PDP: the forked cedar-agent, seeded with the demo ABAC policies.
+  cedar-agent:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    command: ["--policies", "/policies/policies.json"]
+    volumes:
+      - ./policies:/policies:ro
+    ports:
+      # Host 8181 -> container 8180 (avoids clashing with a local cedar-agent on
+      # 8180). Keycloak reaches the PDP in-network at http://cedar-agent:8180.
+      - "8181:8180"
+
+  # Keycloak with the AuthZEN authenticator provider and the demo realm.
+  keycloak:
+    build:
+      context: .
+      dockerfile: keycloak/Dockerfile
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8088:8080"
+    depends_on:
+      - cedar-agent
+
+  # Landing page shown when a login is allowed (the OAuth redirect target).
+  app:
+    image: nginx:alpine
+    volumes:
+      - ./app:/usr/share/nginx/html:ro
+    ports:
+      - "9000:80"
