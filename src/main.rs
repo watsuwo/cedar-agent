@@ -49,7 +49,15 @@ async fn main() -> ExitCode {
                 errors::catchers::handle_400,
             ],
         )
-        .mount("/", openapi_get_routes![routes::health,])
+        .mount(
+            "/",
+            openapi_get_routes![
+                routes::health,
+                routes::authzen::evaluation,
+                routes::authzen::evaluations,
+                routes::authzen::authzen_configuration,
+            ],
+        )
         .mount("/health", openapi_get_routes![routes::health,])
         .mount(
             "/v1",

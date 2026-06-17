@@ -241,6 +241,106 @@ using Rapidoc and Swagger UI, that you can access through the following routes:
 
 **For more details about the performed requests you can check the [examples directory](examples)**
 
+## AuthZEN Support
+
+In addition to the native `/v1/is_authorized` endpoint, Cedar-Agent implements the
+[OpenID Foundation AuthZEN Authorization API 1.0](https://openid.github.io/authzen/),
+so it can act as a standards-compliant Policy Decision Point (PDP) for any AuthZEN client.
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/access/v1/evaluation` | Single access evaluation |
+| `POST` | `/access/v1/evaluations` | Batch access evaluations |
+| `GET`  | `/.well-known/authzen-configuration` | PDP metadata (publicly accessible) |
+
+The evaluation endpoints honour the same optional `Authorization` header
+authentication as the rest of the API. The well-known metadata endpoint is public.
+
+### Mapping to Cedar
+
+AuthZEN identifies the subject/action/resource by `type`/`id`/`name`. These map
+directly onto Cedar entity UIDs:
+
+| AuthZEN | Cedar |
+|---------|-------|
+| `subject` `{ "type": "User", "id": "alice" }` | `User::"alice"` (principal) |
+| `action` `{ "name": "get" }` | `Action::"get"` |
+| `resource` `{ "type": "Document", "id": "doc1" }` | `Document::"doc1"` (resource) |
+| `context` | Cedar request `context` |
+
+This mapping matches the entity naming used in [`examples/data.json`](examples/data.json)
+and [`examples/policies.json`](examples/policies.json), so the same store works for both APIs.
+
+Entities (and their attributes/parents) are read from the data store, exactly like
+`/v1/is_authorized`. If a request also supplies `properties` on the subject/action/resource,
+those are added as additional Cedar entities for that single evaluation. Note that a
+property-bearing entity whose UID already exists in the data store will cause a
+`400 Bad Request` (duplicate entity), so prefer loading shared entities into the data store
+and using `properties` only for entities not already present there.
+
+### Single evaluation
+
+```shell
+curl -X POST -H "Content-Type: application/json" http://localhost:8180/access/v1/evaluation -d '{
+  "subject":  { "type": "User",     "id": "admin.1@domain.com" },
+  "action":   { "name": "get" },
+  "resource": { "type": "Document", "id": "cedar-agent.pdf" }
+}'
+```
+
+Response (the determining Cedar policies are reported under `context.reason_admin`):
+
+```json
+{
+  "decision": true,
+  "context": {
+    "reason_admin": {
+      "policies": ["admins-policy"]
+    }
+  }
+}
+```
+
+### Batch evaluations
+
+Top-level `subject`/`action`/`resource`/`context` act as defaults for each entry in
+`evaluations`. The optional `options.evaluations_semantic` controls short-circuiting:
+`execute_all` (default), `deny_on_first_deny`, or `permit_on_first_permit`.
+
+```shell
+curl -X POST -H "Content-Type: application/json" http://localhost:8180/access/v1/evaluations -d '{
+  "subject":  { "type": "User",     "id": "viewer.1@domain.com" },
+  "resource": { "type": "Document", "id": "cedar-agent.pdf" },
+  "evaluations": [
+    { "action": { "name": "get" } },
+    { "action": { "name": "delete" } }
+  ]
+}'
+```
+
+Response:
+
+```json
+{
+  "evaluations": [
+    { "decision": true, "context": { "reason_admin": { "policies": ["viewers-policy"] } } },
+    { "decision": false }
+  ]
+}
+```
+
+### Metadata discovery
+
+```shell
+curl http://localhost:8180/.well-known/authzen-configuration
+```
+
+> Note: the URLs in the metadata document are derived from the configured address/port
+> (`--addr` / `--port`). The AuthZEN Search APIs (subject/resource/action search) are not
+> implemented.
+
 ## Run Cedar-agents at scale with OPAL
 Want to run multiple Cedar-agents and have them loaded with the data and policeis you need? Try [OPAL](https://github.com/permitio/opal).
 OPAL (Open Policy Administration Layer) is a sister project to Cedar-Agent, which has become the de-facto way to manage policy agents (including others like OPA) at scale.
