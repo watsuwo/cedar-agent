@@ -1,0 +1,14 @@
+[
+  {
+    "id": "internal-portal-policy",
+    "content": "permit(principal, action == Action::\"login\", resource == Client::\"internal-portal\") when { principal has user_type && principal.user_type == \"employee\" && context.access_route == \"internal\" };"
+  },
+  {
+    "id": "partner-portal-policy",
+    "content": "permit(principal, action == Action::\"login\", resource == Client::\"partner-portal\") when { principal has user_type && principal.user_type == \"partner\" && principal has organization && principal.organization == \"globex\" };"
+  },
+  {
+    "id": "public-app-policy",
+    "content": "permit(principal, action == Action::\"login\", resource == Client::\"public-app\");"
+  }
+]

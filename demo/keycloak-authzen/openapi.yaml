@@ -1,0 +1,859 @@
+openapi: 3.0.0
+info:
+  title: cedar-agent (AuthZEN-enabled)
+  description: 'Forked Cedar-Agent HTTP server with OpenID Foundation AuthZEN Authorization
+    API 1.0 support.
+
+
+    Two API surfaces:
+
+    - **AuthZEN Access Evaluation API** (`/access/v1/*`, `/.well-known/authzen-configuration`)
+    for PDP-style allow/deny decisions.
+
+    - **Cedar management API** (`/v1/*`) to manage policies, entity data and schema,
+    plus the native `/v1/is_authorized` evaluation.
+
+
+    All endpoints except `/health` and `/.well-known/authzen-configuration` accept
+    an optional `authorization` API key header when the agent is started with authentication
+    enabled.'
+  contact:
+    name: Source (fork)
+    url: https://github.com/watsuwo/cedar-agent
+  version: 0.2.0
+paths:
+  /:
+    get:
+      operationId: routes_health
+      responses:
+        '200':
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+      tags:
+      - Health
+  /access/v1/evaluation:
+    post:
+      description: AuthZEN single Access Evaluation.
+      operationId: routes_authzen_evaluation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationRequest'
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponse'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - AuthZEN
+  /access/v1/evaluations:
+    post:
+      description: AuthZEN batch Access Evaluations.
+      operationId: routes_authzen_evaluations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationsRequest'
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationsResponse'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - AuthZEN
+  /.well-known/authzen-configuration:
+    get:
+      description: AuthZEN Policy Decision Point metadata. Publicly accessible (no
+        auth) so that clients can discover the PDP endpoints.
+      operationId: routes_authzen_authzen_configuration
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthzenConfiguration'
+      tags:
+      - AuthZEN
+  /v1:
+    get:
+      operationId: routes_health
+      responses:
+        '200':
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+      tags:
+      - Health
+  /v1/policies:
+    get:
+      operationId: routes_policies_get_policies
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Policy'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Policies
+    put:
+      operationId: routes_policies_update_policies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Policy'
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Policy'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Policies
+    post:
+      operationId: routes_policies_create_policy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Policy'
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Policies
+  /v1/policies/{id}:
+    get:
+      operationId: routes_policies_get_policy
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Policies
+    put:
+      operationId: routes_policies_update_policy
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyUpdate'
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Policies
+    delete:
+      operationId: routes_policies_delete_policy
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Policies
+  /v1/data:
+    get:
+      operationId: routes_data_get_entities
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entities'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Data
+    put:
+      operationId: routes_data_update_entities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Entities'
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entities'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Data
+    delete:
+      operationId: routes_data_delete_entities
+      responses:
+        '204':
+          description: ''
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Data
+  /v1/is_authorized:
+    post:
+      operationId: routes_authorization_is_authorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizationCall'
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationAnswer'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Authorization (Cedar)
+  /v1/schema:
+    get:
+      operationId: routes_schema_get_schema
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schema'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Schema
+    put:
+      operationId: routes_schema_update_schema
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Schema'
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schema'
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Schema
+    delete:
+      operationId: routes_schema_delete_schema
+      responses:
+        '204':
+          description: ''
+        '400':
+          description: '# 400 Bad Request
+
+            The request given is wrongly formatted or data was missing. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: '# 401 Unauthorized
+
+            The authentication given was incorrect or insufficient. '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Schema
+components:
+  schemas:
+    EvaluationResponse:
+      description: AuthZEN Access Evaluation response body.
+      type: object
+      required:
+      - decision
+      properties:
+        decision:
+          type: boolean
+        context:
+          allOf:
+          - $ref: '#/components/schemas/ResponseContext'
+          nullable: true
+    ResponseContext:
+      description: Implementation-specific reason payload carried in the response
+        `context`.
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        reason_admin:
+          description: 'Administrative reasoning: the Cedar policy ids that determined
+            the decision and any evaluation errors.'
+          nullable: true
+    ErrorResponse:
+      description: Error messages returned to user
+      type: object
+      required:
+      - code
+      - description
+      - reason
+      properties:
+        reason:
+          description: The title of the error message
+          type: string
+        description:
+          description: The description of the error
+          type: string
+        code:
+          type: integer
+          format: uint16
+          minimum: 0.0
+    EvaluationRequest:
+      description: AuthZEN single Access Evaluation request body (`POST /access/v1/evaluation`).
+      type: object
+      required:
+      - action
+      - resource
+      - subject
+      properties:
+        subject:
+          $ref: '#/components/schemas/Subject'
+        action:
+          $ref: '#/components/schemas/Action'
+        resource:
+          $ref: '#/components/schemas/Resource'
+        context:
+          nullable: true
+    Subject:
+      description: 'AuthZEN subject: maps to a Cedar `principal` entity (`type::"id"`).'
+      type: object
+      required:
+      - id
+      - type
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        properties:
+          description: Optional attributes for the subject entity.
+          nullable: true
+    Action:
+      description: 'AuthZEN action: maps to a Cedar `action` entity (`Action::"name"`).'
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+        properties:
+          description: Optional attributes for the action entity.
+          nullable: true
+    Resource:
+      description: 'AuthZEN resource: maps to a Cedar `resource` entity (`type::"id"`).'
+      type: object
+      required:
+      - id
+      - type
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        properties:
+          description: Optional attributes for the resource entity.
+          nullable: true
+    EvaluationsResponse:
+      description: AuthZEN batch Access Evaluations response body.
+      type: object
+      required:
+      - evaluations
+      properties:
+        evaluations:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluationResponse'
+    EvaluationsRequest:
+      description: 'AuthZEN batch Access Evaluations request body (`POST /access/v1/evaluations`).
+
+
+        The top-level `subject`/`action`/`resource`/`context` act as defaults that
+        each entry in `evaluations` may override.'
+      type: object
+      properties:
+        subject:
+          allOf:
+          - $ref: '#/components/schemas/Subject'
+          nullable: true
+        action:
+          allOf:
+          - $ref: '#/components/schemas/Action'
+          nullable: true
+        resource:
+          allOf:
+          - $ref: '#/components/schemas/Resource'
+          nullable: true
+        context:
+          nullable: true
+        evaluations:
+          default: []
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluationItem'
+        options:
+          allOf:
+          - $ref: '#/components/schemas/EvaluationOptions'
+          nullable: true
+    EvaluationItem:
+      description: One item in an AuthZEN batch request. Any omitted field falls back
+        to the top-level default of the enclosing [`EvaluationsRequest`].
+      type: object
+      properties:
+        subject:
+          allOf:
+          - $ref: '#/components/schemas/Subject'
+          nullable: true
+        action:
+          allOf:
+          - $ref: '#/components/schemas/Action'
+          nullable: true
+        resource:
+          allOf:
+          - $ref: '#/components/schemas/Resource'
+          nullable: true
+        context:
+          nullable: true
+    EvaluationOptions:
+      description: Options controlling AuthZEN batch evaluation semantics.
+      type: object
+      properties:
+        evaluations_semantic:
+          description: One of `execute_all` (default), `deny_on_first_deny`, `permit_on_first_permit`.
+          type: string
+          nullable: true
+    AuthzenConfiguration:
+      description: AuthZEN Policy Decision Point metadata (`GET /.well-known/authzen-configuration`).
+      type: object
+      required:
+      - access_evaluation_endpoint
+      - access_evaluations_endpoint
+      - capabilities
+      - policy_decision_point
+      properties:
+        policy_decision_point:
+          type: string
+        access_evaluation_endpoint:
+          type: string
+        access_evaluations_endpoint:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+    Policy:
+      type: object
+      required:
+      - content
+      - id
+      properties:
+        id:
+          type: string
+        content:
+          type: string
+    PolicyUpdate:
+      type: object
+      required:
+      - content
+      properties:
+        content:
+          type: string
+    Entities:
+      type: array
+      items:
+        $ref: '#/components/schemas/Entity'
+    Entity: {}
+    AuthorizationAnswer:
+      type: object
+      required:
+      - decision
+      - diagnostics
+      properties:
+        decision:
+          $ref: '#/components/schemas/DecisionRef'
+        diagnostics:
+          $ref: '#/components/schemas/DiagnosticsRef'
+    DecisionRef:
+      oneOf:
+      - type: string
+        enum:
+        - Allow
+      - description: The `Authorizer` determined that the query should be denied.
+          This is also returned if sufficiently fatal errors are encountered such
+          that no decision could be safely reached; for example, errors parsing the
+          policies.
+        type: string
+        enum:
+        - Deny
+    DiagnosticsRef:
+      type: object
+      required:
+      - errors
+      - reason
+      properties:
+        reason:
+          description: '`PolicyId`s of the policies that contributed to the decision.
+            If no policies applied to the query, this set will be empty.'
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        errors:
+          description: list of error messages which occurred
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+    AuthorizationCall:
+      type: object
+      properties:
+        principal:
+          type: string
+          nullable: true
+        action:
+          type: string
+          nullable: true
+        resource:
+          type: string
+          nullable: true
+        context:
+          nullable: true
+        entities:
+          nullable: true
+        additional_entities:
+          nullable: true
+    Schema: {}
+  securitySchemes:
+    ApiKeyAuth:
+      description: "Optional API key to access, \n            used if the agent was\
+        \ started with authentication configuration."
+      type: apiKey
+      name: authorization
+      in: header
+servers:
+- url: http://localhost:8181
+  description: keycloak-authzen demo (host-mapped)
+- url: http://cedar-agent:8180
+  description: in-compose-network address used by Keycloak
+tags:
+- name: AuthZEN
+  description: OpenID AuthZEN Authorization API 1.0 (access evaluation + PDP metadata).
+- name: Authorization (Cedar)
+  description: Native Cedar is_authorized evaluation.
+- name: Policies
+  description: CRUD over the in-memory Cedar policy store.
+- name: Data
+  description: CRUD over the in-memory Cedar entity data store.
+- name: Schema
+  description: Get/update/delete the Cedar schema.
+- name: Health
+  description: Liveness probe.
