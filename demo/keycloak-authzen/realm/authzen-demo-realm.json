@@ -24,8 +24,8 @@
 
   "clients": [
     {
-      "clientId": "internal-portal",
-      "name": "Internal Portal (employees, internal network)",
+      "clientId": "a-client",
+      "name": "A Client (deny: employee + dept A* + internet)",
       "enabled": true,
       "publicClient": true,
       "standardFlowEnabled": true,
@@ -37,21 +37,8 @@
       }
     },
     {
-      "clientId": "partner-portal",
-      "name": "Partner Portal (partner orgs)",
-      "enabled": true,
-      "publicClient": true,
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "redirectUris": ["http://localhost:9000/*"],
-      "webOrigins": ["+"],
-      "attributes": {
-        "post.logout.redirect.uris": "+"
-      }
-    },
-    {
-      "clientId": "public-app",
-      "name": "Public App (any authenticated user)",
+      "clientId": "b-client",
+      "name": "B Client (deny: partner + internal)",
       "enabled": true,
       "publicClient": true,
       "standardFlowEnabled": true,
@@ -69,7 +56,7 @@
       "username": "alice",
       "enabled": true,
       "emailVerified": true,
-      "email": "alice@acme.example",
+      "email": "alice@example.com",
       "firstName": "Alice",
       "lastName": "Employee",
       "credentials": [
@@ -77,37 +64,37 @@
       ],
       "attributes": {
         "user_type": ["employee"],
-        "organization": ["acme"]
+        "department": ["A-Sales"]
       }
     },
     {
       "username": "bob",
       "enabled": true,
       "emailVerified": true,
-      "email": "bob@globex.example",
+      "email": "bob@example.com",
       "firstName": "Bob",
-      "lastName": "Partner",
+      "lastName": "Employee",
       "credentials": [
         { "type": "password", "value": "password", "temporary": false }
       ],
       "attributes": {
-        "user_type": ["partner"],
-        "organization": ["globex"]
+        "user_type": ["employee"],
+        "department": ["B-Engineering"]
       }
     },
     {
       "username": "carol",
       "enabled": true,
       "emailVerified": true,
-      "email": "carol@initech.example",
+      "email": "carol@example.com",
       "firstName": "Carol",
-      "lastName": "Contractor",
+      "lastName": "Partner",
       "credentials": [
         { "type": "password", "value": "password", "temporary": false }
       ],
       "attributes": {
-        "user_type": ["contractor"],
-        "organization": ["initech"]
+        "user_type": ["partner"],
+        "department": ["Partner-Support"]
       }
     }
   ],

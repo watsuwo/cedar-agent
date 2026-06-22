@@ -27,7 +27,7 @@ import java.util.Map;
  *
  * <p>The AuthZEN request is built as:
  * <pre>
- *   subject  = { type: "User", id: &lt;username&gt;, properties: { user_type, organization } }
+ *   subject  = { type: "User", id: &lt;username&gt;, properties: { user_type, department } }
  *   action   = { name: &lt;configured action, default "login"&gt; }
  *   resource = { type: &lt;configured type, default "Client"&gt;, id: &lt;clientId&gt; }
  *   context  = { ip, access_route }
@@ -68,7 +68,7 @@ public class AuthZenAuthenticator implements Authenticator {
 
         ClientModel client = context.getAuthenticationSession().getClient();
         String clientId = client != null ? client.getClientId() : "unknown";
-        String ip = context.getConnection() != null ? context.getConnection().getRemoteAddr() : null;
+        String ip = remoteIp(context);
 
         Map<String, Object> body = buildEvaluationRequest(user, action, resourceType, clientId, ip);
 
@@ -107,7 +107,7 @@ public class AuthZenAuthenticator implements Authenticator {
 
         Map<String, Object> properties = new LinkedHashMap<>();
         putIfPresent(properties, "user_type", user.getFirstAttribute("user_type"));
-        putIfPresent(properties, "organization", user.getFirstAttribute("organization"));
+        putIfPresent(properties, "department", user.getFirstAttribute("department"));
         if (!properties.isEmpty()) {
             subject.put("properties", properties);
         }
@@ -170,8 +170,27 @@ public class AuthZenAuthenticator implements Authenticator {
     }
 
     /**
-     * Classify the remote address as an internal or external access route. This
-     * is a demo-grade heuristic (loopback and RFC 1918 ranges count as internal).
+     * Resolve the remote IP of the login request. When an {@code X-Forwarded-For}
+     * header is present (Keycloak behind a reverse proxy) its first hop is used —
+     * this also lets the demo simulate an internet-facing login by setting the
+     * header. Otherwise the direct connection address is used.
+     */
+    private static String remoteIp(AuthenticationFlowContext context) {
+        try {
+            String xff = context.getHttpRequest().getHttpHeaders().getHeaderString("X-Forwarded-For");
+            if (xff != null && !xff.isBlank()) {
+                return xff.split(",")[0].trim();
+            }
+        } catch (Exception ignored) {
+            // fall back to the direct connection address below
+        }
+        return context.getConnection() != null ? context.getConnection().getRemoteAddr() : null;
+    }
+
+    /**
+     * Classify the remote address as an {@code internal} or {@code internet}
+     * access route. This is a demo-grade heuristic (loopback and RFC 1918 ranges
+     * count as internal; everything else is treated as coming from the internet).
      */
     static String classifyRoute(String ip) {
         if (ip == null || ip.isBlank()) {
@@ -196,7 +215,7 @@ public class AuthZenAuthenticator implements Authenticator {
                 }
             }
         }
-        return "external";
+        return "internet";
     }
 
     @Override
